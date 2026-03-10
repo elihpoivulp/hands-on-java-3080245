@@ -12,20 +12,11 @@ public class DataSource {
     Connection connection = null;
     try {
       connection = DriverManager.getConnection(dbFile);
-      System.out.println("We're connected\r\n---------------");
     } catch (SQLException e) {
       e.printStackTrace();
     }
 
     return connection;
-  }
-
-  public static void main(String[] args) {
-    // Customer customer = getCustomer("twest8o@friendfeed.com");
-    // System.out.println(customer.getName());
-
-    Account account = getAccount(10385);
-    System.out.println(account.getBalance());
   }
 
   public static Customer getCustomer(String username) {
@@ -36,8 +27,10 @@ public class DataSource {
         PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setString(1, username);
       try (ResultSet resultSet = statement.executeQuery()) {
-        customer = new Customer(resultSet.getInt("id"), resultSet.getString("name"), resultSet.getString("username"),
-            resultSet.getString("password"), resultSet.getInt("account_id"));
+        if (resultSet.next()) {
+          customer = new Customer(resultSet.getInt("id"), resultSet.getString("name"), resultSet.getString("username"),
+              resultSet.getString("password"), resultSet.getInt("account_id"));
+        }
       }
     } catch (SQLException e) {
       e.printStackTrace();
@@ -55,12 +48,28 @@ public class DataSource {
         PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setInt(1, id);
       try (ResultSet resultSet = statement.executeQuery()) {
-        account = new Account(resultSet.getInt("id"), resultSet.getString("type"), resultSet.getDouble("balance"));
+        if (resultSet.next()) {
+          account = new Account(resultSet.getInt("id"), resultSet.getString("type"), resultSet.getDouble("balance"));
+        }
       }
     } catch (SQLException e) {
       e.printStackTrace();
     }
 
     return account;
+  }
+
+  public static void updateAccountBalance(Account account) {
+    String sql = "update accounts set balance = ? where id = ?";
+
+    try (
+        Connection connection = connect();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setDouble(1, account.getBalance());
+      statement.setInt(2, account.getId());
+      statement.executeUpdate();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
   }
 }
